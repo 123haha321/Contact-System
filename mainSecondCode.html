@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Contact History</title>
+		<link rel="stylesheet" href="mainSecondCode.css">
+	</head>
+	<body>
+		<div class="container">
+			<h1>Contact History</h1>
+			<table id="contactsTable">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Phone</th>
+						<th>Email</th>
+						<th>Address</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<!-- 历史记录将在这里动态插入 -->
+				</tbody>
+			</table>
+		</div>
+		
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				fetch('http://localhost:3000/api/contacts')
+					.then(response => response.json())
+					.then(data => {
+						const tableBody = document.getElementById('contactsTable').querySelector('tbody');
+						data.forEach(contact => {
+							const row = tableBody.insertRow();
+							row.insertCell(0).textContent = contact.name;
+							row.insertCell(1).textContent = contact.phone;
+							row.insertCell(2).textContent = contact.email;
+							row.insertCell(3).textContent = contact.address;
+
+							// 添加操作按钮
+							const actionCell = row.insertCell(4);
+							const editButton = document.createElement('button');
+							editButton.textContent = 'Edit';
+							editButton.className = 'edit-button';
+							editButton.dataset.id = contact.id;
+							editButton.dataset.name = contact.name;
+							editButton.dataset.phone = contact.phone;
+							editButton.dataset.email = contact.email;
+							editButton.dataset.address = contact.address;
+							actionCell.appendChild(editButton);
+
+							const deleteButton = document.createElement('button');
+							deleteButton.textContent = 'Delete';
+							deleteButton.className = 'delete-button';
+							deleteButton.dataset.id = contact.id;
+							actionCell.appendChild(deleteButton);
+						});
+
+						// 添加修改按钮的点击事件监听器
+						document.querySelectorAll('.edit-button').forEach(button => {
+							button.addEventListener('click', function() {
+								const contactId = this.dataset.id;
+								const newName = prompt("Enter new name", this.dataset.name);
+								const newPhone = prompt("Enter new phone", this.dataset.phone);
+								const newEmail = prompt("Enter new email", this.dataset.email);
+								const newAddress = prompt("Enter new address", this.dataset.address);
+
+								fetch(`http://localhost:3000/api/contact/${contactId}`, {
+										method: 'PUT',
+										headers: {
+											'Content-Type': 'application/json'
+										},
+										body: JSON.stringify({
+											name: newName,
+											phone: newPhone,
+											email: newEmail,
+											address: newAddress
+										})
+									})
+									.then(response => response.json())
+									.then(data => {
+										alert(data.message);
+										location.reload(); // 刷新页面以显示更新后的数据
+									})
+									.catch(error => console.error('Error updating contact:', error));
+							});
+						});
+
+						// 添加删除按钮的点击事件监听器
+						document.querySelectorAll('.delete-button').forEach(button => {
+							button.addEventListener('click', function() {
+								const contactId = this.dataset.id;
+								if (confirm(
+										`Are you sure you want to delete the contact with ID ${contactId}?`
+										)) {
+									fetch(`http://localhost:3000/api/contact/${contactId}`, {
+											method: 'DELETE'
+										})
+										.then(response => response.json())
+										.then(data => {
+											alert(data.message);
+											location.reload(); // 刷新页面以显示更新后的数据
+										})
+										.catch(error => console.error('Error deleting contact:',
+											error));
+								}
+							});
+						});
+					})
+					.catch(error => console.error('Error fetching contacts:', error));
+			});
+		</script>
+	</body>
+</html>

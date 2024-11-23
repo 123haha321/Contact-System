@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Contact Management System</title>
+		<link rel="stylesheet" href="mainFirstCode.css">
+
+	</head>
+
+	<body>
+		<div class="container">
+			<h1>Contact Management System</h1>
+			<p>Please enter your contact information below:</p>
+			<form onsubmit="return onClick();">
+				<!-- onsubmit event is used to prevent the form from submitting 
+        if the validation fails -->
+				<div class="input-group">
+					<label for="name">Name:</label>
+					<input type="text" id="name" name="name">
+					<label for="phone">Phone:</label>
+					<input type="text" id="phone" name="phone">
+					<label for="email">Email:</label>
+					<input type="email" id="email" name="email">
+					<label for="address">Address:</label>
+					<input type="text" id="address" name="address" pattern="^[a-zA-Z0-9., ]+$"><br>
+					<input type="submit" value="Submit">
+					<input type="reset" value="Reset">
+				</div>
+			</form>
+			<!-- 添加一个链接到历史记录页面 -->
+			<a href="mainSecondCode.html" target="_blank">View Contact History</a>
+		</div>
+
+		<script>
+			async function onClick() {
+				const nameInput = document.getElementById("name");
+				const phoneInput = document.getElementById("phone");
+				const emailInput = document.getElementById("email");
+				const addressInput = document.getElementById("address");
+
+				// 验证手机号
+				if (phoneInput.value.length !== 11 || isNaN(phoneInput.value)) {
+					alert("Please enter a valid phone number.");
+					phoneInput.focus();
+					return false;
+				}
+
+				// 验证邮箱
+				if (emailInput.value.length === 0 || !emailInput.checkValidity()) {
+					alert("Please enter a valid email address.");
+					emailInput.focus();
+					return false;
+				}
+
+				// 验证地址
+				if (addressInput.value.length === 0) {
+					alert("Please enter your address.");
+					addressInput.focus();
+					return false;
+				}
+
+				try {
+					alert("Submitting contact information...");
+					// 如果所有验证通过，向后端发送数据
+					const response = await fetch("http://localhost:3000/api/contact", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json"
+						},
+						body: JSON.stringify({
+							name: nameInput.value,
+							phone: phoneInput.value,
+							email: emailInput.value,
+							address: addressInput.value
+						})
+					});
+
+					const result = await response.json(); // 解析 JSON 响应
+
+					if (response.ok) {
+						alert("Contact information submitted successfully!");
+						nameInput.value = "";
+						phoneInput.value = "";
+						emailInput.value = "";
+						addressInput.value = "";
+					} else {
+						alert(result.message); // 提示用户
+					}
+				} catch (error) {
+					alert(error.message);
+				}
+				return false; // 阻止默认表单提交
+			}
+		</script>
+	</body>
+</html>
