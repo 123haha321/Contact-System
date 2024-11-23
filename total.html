@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Contact Management System</title>
+		<link rel="stylesheet" href="mainFirstCode.css">
+		<link rel="stylesheet" href="mainSecondCode.css">
+		<style>
+			.container {
+				max-width: 900px;
+				margin: auto;
+				padding: 20px;
+				background-color: #fff;
+				box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+				min-height: 100%;
+				overflow: auto;
+			}
+
+			.hidden {
+				display: none;
+			}
+
+			@media (max-width: 768px) {
+				.container {
+					width: 90%;
+				}
+			}
+
+			.action-buttons {
+				display: flex;
+				gap: 5px;
+			}
+
+			.favorite-button {
+				background-color: #ccc;
+				color: white;
+				border: none;
+				padding: 5px 10px;
+				cursor: pointer;
+			}
+
+			.favorite-button.favorite {
+				background-color: #ffcc00;
+			}
+
+			.view-favorites-button {
+				background-color: #4CAF50;
+				color: white;
+				border: none;
+				padding: 5px 10px;
+				cursor: pointer;
+				margin-left: 10px;
+			}
+
+			.add-button {
+				background-color: #4CAF50;
+				color: white;
+				border: none;
+				border-radius: 50%;
+				padding: 5px;
+				cursor: pointer;
+				font-size: 16px;
+				line-height: 20px;
+				text-align: center;
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				margin-left: 5px;
+			}
+
+			.export-excel-button {
+				background-color: #007bff;
+				color: white;
+				border: none;
+				padding: 5px 10px;
+				cursor: pointer;
+				margin-left: 5px;
+			}
+
+			.modal {
+				display: none;
+				position: fixed;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.5);
+				overflow: auto;
+			}
+
+			.modal-content {
+				background-color: #fff;
+				margin: 15% auto;
+				padding: 20px;
+				border: 1px solid #888;
+				width: 80%;
+			}
+
+			.close {
+				color: #aaa;
+				float: right;
+				font-size: 28px;
+				font-weight: bold;
+			}
+
+			.close:hover,
+			.close:focus {
+				color: black;
+				text-decoration: none;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Contact Management System</h1>
+			<p>Please enter your contact information below:</p>
+			<form id="contactForm">
+				<div class="input-group">
+					<label for="name">Name:</label>
+					<input type="text" id="name" name="name">
+					<label for="phone">Phone:</label>
+					<input type="text" id="phone" name="phone">
+					<label for="email">Email:</label>
+					<input type="email" id="email" name="email">
+					<label for="address">Address:</label>
+					<input type="text" id="address" name="address" pattern="^[a-zA-Z0-9., ]+$"><br>
+					<input type="submit" value="Submit">
+					<input type="reset" value="Reset">
+				</div>
+			</form>
+
+			<button onclick="toggleForm()">Add Contact</button>
+			<button class="view-favorites-button" onclick="toggleFavoritesView()">View Favorites</button>
+			<button class="export-excel-button" onclick="exportToExcel()">Export to Excel</button>
+
+			<h2>Contact History</h2>
+			<table id="contactsTable">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Phone</th>
+						<th>Email</th>
+						<th>Address</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<!-- 历史记录将在这里动态插入 -->
+				</tbody>
+			</table>
+
+			<div id="favoritesView" class="hidden">
+				<h2>Favorite Contacts</h2>
+				<table id="favoritesTable">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Phone</th>
+							<th>Email</th>
+							<th>Address</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- 收藏的联系人将在这里动态插入 -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- 模态框结构，用于添加电话号码 -->
+		<div id="phoneModal" class="modal">
+			<div class="modal-content">
+				<span class="close">&times;</span>
+				<h2>Add Phone</h2>
+				<input type="text" id="newPhone" placeholder="Enter new phone number">
+				<button onclick="addPhone()"> Add</button>
+			</div>
+		</div>
+
+		<!-- 模态框结构，用于添加电子邮件 -->
+		<div id="emailModal" class="modal">
+			<div class="modal-content">
+				<span class="close">&times;</span>
+				<h2>Add Email</h2>
+				<input type="email" id="newEmail" placeholder="Enter new email">
+				<button onclick="addEmail()">Add</button>
+			</div>
+		</div>
+
+		<!-- 模态框结构，用于添加地址 -->
+		<div id="addressModal" class="modal">
+			<div class="modal-content">
+				<span class="close">&times;</span>
+				<h2>Add Address</h2>
+				<input type="text" id="newAddress" placeholder="Enter new address">
+				<button onclick="addAddress()">Add</button>
+			</div>
+		</div>
+
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				fetch('http://localhost:3000/api/contacts')
+					.then(response => response.json())
+					.then(data => {
+						const tableBody = document.getElementById('contactsTable').querySelector('tbody');
+						tableBody.innerHTML = ''; // 清空现有数据
+						data.forEach(contact => {
+							const row = tableBody.insertRow();
+							row.insertCell(0).textContent = contact.name;
+
+							// 为电话号码、电子邮件和地址添加加号按钮
+							const phoneCell = row.insertCell(1);
+							phoneCell.textContent = contact.phone;
+							const addPhoneButton = document.createElement('button');
+							addPhoneButton.textContent = '+';
+							addPhoneButton.className = 'add-button';
+							addPhoneButton.onclick = function() {
+								openPhoneModal(contact.id);
+							};
+							phoneCell.appendChild(addPhoneButton);
+
+							const emailCell = row.insertCell(2);
+							emailCell.textContent = contact.email;
+							const addEmailButton = document.createElement('button');
+							addEmailButton.textContent = '+';
+							addEmailButton.className = 'add-button';
+							addEmailButton.onclick = function() {
+								openEmailModal(contact.id);
+							};
+							emailCell.appendChild(addEmailButton);
+
+							const addressCell = row.insertCell(3);
+							addressCell.textContent = contact.address;
+							const addAddressButton = document.createElement('button');
+							addAddressButton.textContent = '+';
+							addAddressButton.className = 'add-button';
+							addAddressButton.onclick = function() {
+								openAddressModal(contact.id);
+							};
+							addressCell.appendChild(addAddressButton);
+
+							const actionCell = row.insertCell(4);
+							const actionButtons = document.createElement('div');
+							actionButtons.className = 'action-buttons';
+
+							const editButton = document.createElement('button');
+							editButton.textContent = 'Edit';
+							editButton.className = 'edit-button';
+							editButton.dataset.id = contact.id;
+							actionButtons.appendChild(editButton);
+
+							const deleteButton = document.createElement('button');
+							deleteButton.textContent = 'Delete';
+							deleteButton.className = 'delete-button';
+							deleteButton.dataset.id = contact.id;
+							actionButtons.appendChild(deleteButton);
+
+							const favoriteButton = document.createElement('button');
+							favoriteButton.textContent = 'Favorite';
+							favoriteButton.className =
+								`favorite-button ${contact.is_favorite ? 'favorite' : ''}`;
+							favoriteButton.dataset.id = contact.id;
+							actionButtons.appendChild(favoriteButton);
+
+							actionCell.appendChild(actionButtons);
+
+							actionButtons.addEventListener('click', function(event) {
+								if (event.target.classList.contains('edit-button')) {
+									handleEdit(event);
+								} else if (event.target.classList.contains('delete-button')) {
+									handleDelete(event);
+								} else if (event.target.classList.contains('favorite-button')) {
+									handleFavorite(event);
+								}
+							});
+						});
+					})
+					.catch(error => console.error('Error fetching contacts:', error));
+			});
+
+			function toggleFavoritesView() {
+				const favoritesView = document.getElementById('favoritesView');
+				favoritesView.classList.toggle('hidden');
+				if (!favoritesView.classList.contains('hidden')) {
+					loadFavorites();
+				}
+			}
+
+			function loadFavorites() {
+				fetch('http://localhost:3000/api/favorites')
+					.then(response => response.json())
+					.then(data => {
+						const favoritesTableBody = document.getElementById('favoritesTable').querySelector('tbody');
+						favoritesTableBody.innerHTML = ''; // 清空现有数据
+						data.forEach(contact => {
+							const row = favoritesTableBody.insertRow();
+							row.insertCell(0).textContent = contact.name;
+							row.insertCell(1).textContent = contact.phone;
+							row.insertCell(2).textContent = contact.email;
+							row.insertCell(3).textContent = contact.address;
+						});
+					})
+					.catch(error => console.error('Error fetching favorite contacts:', error));
+			}
+
+			function toggleForm() {
+				const contactForm = document.getElementById('contactForm');
+				contactForm.classList.toggle('hidden');
+			}
+
+			async function onClick(event) {
+				event.preventDefault();
+				const nameInput = document.getElementById("name");
+				const phoneInput = document.getElementById("phone");
+				const emailInput = document.getElementById("email");
+				const addressInput = document.getElementById("address");
+
+				if (phoneInput.value.length !== 11 || isNaN(phoneInput.value)) {
+					alert("Please enter a valid phone number.");
+					phoneInput.focus();
+					return false;
+				}
+
+				if (emailInput.value.length === 0 || !emailInput.checkValidity()) {
+					alert("Please enter a valid email address.");
+					emailInput.focus();
+					return false;
+				}
+
+				if (addressInput.value.length === 0) {
+					alert("Please enter your address.");
+					addressInput.focus();
+					return false;
+				}
+
+				try {
+					alert("Submitting contact information...");
+					const response = await fetch("http://localhost:3000/api/contact", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json"
+						},
+						body: JSON.stringify({
+							name: nameInput.value,
+							phone: phoneInput.value,
+							email: emailInput.value,
+							address: addressInput.value
+						})
+					});
+
+					const result = await response.json();
+
+					if (response.ok) {
+						alert("Contact information submitted successfully!");
+						nameInput.value = "";
+						phoneInput.value = "";
+						emailInput.value = "";
+						addressInput.value = "";
+						location.reload();
+					} else {
+						alert(result.message);
+					}
+				} catch (error) {
+					alert(error.message);
+				}
+			}
+
+			document.getElementById('contactForm').addEventListener('submit', onClick);
+
+			function handleEdit(event) {
+				const contactId = event.target.dataset.id;
+				const newName = prompt("Enter new name", event.target.dataset.name);
+				const newPhone = prompt("Enter new phone", event.target.dataset.phone);
+				const newEmail = prompt("Enter new email", event.target.dataset.email);
+				const newAddress = prompt("Enter new address", event.target.dataset.address);
+
+				fetch(`http://localhost:3000/api/contact/${contactId}`, {
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							name: newName,
+							phone: newPhone,
+							email: newEmail,
+							address: newAddress
+						})
+					})
+					.then(response => response.json())
+					.then(data => {
+						alert(data.message);
+						location.reload();
+					})
+					.catch(error => console.error('Error updating contact:', error));
+			}
+
+			function handleDelete(event) {
+				const contactId = event.target.dataset.id;
+				if (confirm(`Are you sure you want to delete the contact with ID ${contactId}?`)) {
+					fetch(`http://localhost:3000/api/contact/${contactId}`, {
+							method: 'DELETE'
+						}).then(response => response.json())
+						.then(data => {
+							alert(data.message);
+							location.reload();
+						})
+						.catch(error => console.error('Error deleting contact:', error));
+				}
+			}
+
+			function handleFavorite(event) {
+				const favoriteButton = event.target;
+				const contactId = favoriteButton.dataset.id;
+
+				favoriteButton.classList.toggle('favorite');
+
+				const method = favoriteButton.classList.contains('favorite') ? 'POST' : 'DELETE';
+				const url = `http://localhost:3000/api/contact/${contactId}/favorite`;
+
+				console.log(`Sending ${method} request to ${url}`); // 打印日志
+
+				fetch(url, {
+						method: method,
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							favorite: favoriteButton.classList.contains('favorite')
+						})
+					})
+					.then(response => {
+						console.log('Response status:', response.status); // 打印响应状态
+						return response.json();
+					})
+					.then(data => {
+						alert(data.message);
+					})
+					.catch(error => {
+						console.error('Error toggling favorite contact:', error); // 打印错误日志
+					});
+			}
+
+			let currentContactId = null;
+
+			function openPhoneModal(contactId) {
+				currentContactId = contactId;
+				document.getElementById('phoneModal').style.display = 'block';
+				document.getElementById('newPhone').value = '';
+			}
+
+			function addPhone() {
+				const newPhone = document.getElementById('newPhone').value;
+				if (newPhone) {
+					const phoneInput = document.getElementById('phone');
+					phoneInput.value += ', ' + newPhone;
+					alert("Phone added successfully");
+					closePhoneModal();
+				}
+			}
+
+			function closePhoneModal() {
+				document.getElementById('phoneModal').style.display = 'none';
+			}
+
+			function openEmailModal(contactId) {
+				currentContactId = contactId;
+				document.getElementById('emailModal').style.display = 'block';
+				document.getElementById('newEmail').value = '';
+			}
+
+			function addEmail() {
+				const newEmail = document.getElementById('newEmail').value;
+				if (newEmail) {
+					const emailInput = document.getElementById('email');
+					emailInput.value += ', ' + newEmail;
+					alert("Email added successfully");
+					closeEmailModal();
+				}
+			}
+
+			function closeEmailModal() {
+				document.getElementById('emailModal').style.display = 'none';
+			}
+
+			function openAddressModal(contactId) {
+				currentContactId = contactId;
+				document.getElementById('addressModal').style.display = 'block';
+				document.getElementById('newAddress').value = '';
+			}
+
+			function addAddress() {
+				const newAddress = document.getElementById('newAddress').value;
+				if (newAddress) {
+					const addressInput = document.getElementById('address');
+					addressInput.value += ', ' + newAddress;
+					alert("Address added successfully");
+					closeAddressModal();
+				}
+			}
+
+			function closeAddressModal() {
+				document.getElementById('addressModal').style.display = 'none';
+			}
+
+			document.querySelector('.close').addEventListener('click', function() {
+				const modals = document.querySelectorAll('.modal');
+				modals.forEach(modal => modal.style.display = 'none');
+			});
+			
+			function exportToExcel() {
+			        // 实现导出到Excel的逻辑
+			        alert("Export to Excel feature not implemented yet.");
+			    }
+			
+			    // 为导出到Excel按钮添加事件监听器
+			    document.querySelector('.export-excel-button').addEventListener('click', exportToExcel);
+		</script>
+	</body>
+</html>
