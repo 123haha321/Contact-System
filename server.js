@@ -20,7 +20,27 @@ const pool = mysql.createPool({
 
 // 配置multer存储引擎为内存存储
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({
+	storage: storage
+});
+
+// 添加phones列到contacts表
+const addPhonesColumnToContactsTable = () => {
+	const query = 'ALTER TABLE contacts ADD COLUMN phones JSON DEFAULT \'[]\'';
+	return new Promise((resolve, reject) => {
+		pool.query(query, (error, results) => {
+			if (error) {
+				return reject(error);
+			}
+			resolve(results);
+		});
+	});
+};
+
+// 在应用程序启动时调用这个函数
+addPhonesColumnToContactsTable()
+	.then(() => console.log('Added phones column to contacts table'))
+	.catch(error => console.error('Error adding phones column:', error));
 
 // 定义一个路由来处理前端发送的POST请求，添加联系人
 app.post('/api/contact', async (req, res) => {
@@ -250,35 +270,90 @@ app.get('/api/contacts/export', (req, res) => {
 
 // 导入Excel文件的路由
 app.post('/api/contacts/import', upload.single('file'), (req, res) => {
-    const file = req.file;
-    if (!file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-    }
+	const file = req.file;
+	if (!file) {
+		return res.status(400).json({
+			message: 'No file uploaded'
+		});
+	}
 
-    try {
-        const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(sheet);
+	try {
+		const workbook = XLSX.read(file.buffer, {
+			type: 'buffer'
+		});
+		const sheetName = workbook.SheetNames[0];
+		const sheet = workbook.Sheets[sheetName];
+		const data = XLSX.utils.sheet_to_json(sheet);
 
-        data.forEach((row, index) => {
-            if (index === 0) return; // Skip the header row
-            const query = 'INSERT INTO contacts (name, phone, email, address) VALUES (?, ?, ?, ?)';
-            pool.query(query, [row.Name, row.Phone, row.Email, row.Address], (error) => {
-                if (error) {
-                    console.error('Error inserting contact:', error);
-                    return res.status(500).json({ message: error.message });
-                }
-            });
-        });
+		data.forEach((row, index) => {
+			if (index === 0) return; // Skip the header row
+			const query = 'INSERT INTO contacts (name, phone, email, address) VALUES (?, ?, ?, ?)';
+			pool.query(query, [row.Name, row.Phone, row.Email, row.Address], (error) => {
+				if (error) {
+					console.error('Error inserting contact:', error);
+					return res.status(500).json({
+						message: error.message
+					});
+				}
+			});
+		});
 
-        res.status(200).json({ message: 'Contacts imported successfully' });
-    } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        res.status(500).json({ message: error.message });
-    }
+		res.status(200).json({
+			message: 'Contacts imported successfully'
+		});
+	} catch (error) {
+		console.error('Error parsing Excel file:', error);
+		res.status(500).json({
+			message: error.message
+		});
+	}
 });
 
+// 添加电话号码到联系人
+app.post('/api/contact/:id/addPhone', (req, res) => {
+	const {
+		phone
+	} = req.body;
+	const contactId = req.params.id;
+
+	if (!phone) {
+		return res.status(400).json({
+			message: 'Phone number is required'
+		});
+	}
+
+	pool.query('SELECT phones FROM contacts WHERE id = ?', [contactId], (error, results) => {
+		if (error) {
+			return res.status(500).json({
+				message: error.message
+			});
+		}
+		if (results.length === 0) {
+			return res.status(404).json({
+				message: 'Contact not found'
+			});
+		}
+
+		let currentPhones = results[0].phones;
+		if (currentPhones === null) {
+			currentPhones = []; // 如果phones是null，初始化为一个空数组
+		}
+
+		const newPhones = [...new Set(currentPhones.concat(phone))]; // 确保电话号码不重复
+
+		const updateQuery = 'UPDATE contacts SET phones = ? WHERE id = ?';
+		pool.query(updateQuery, [JSON.stringify(newPhones), contactId], (error, updateResults) => {
+			if (error) {
+				return res.status(500).json({
+					message: error.message
+				});
+			}
+			res.status(200).json({
+				message: 'Phone number added successfully'
+			});
+		});
+	});
+});
 // 设置服务器监听的端口
 const PORT = 3000;
 app.listen(PORT, () => {
