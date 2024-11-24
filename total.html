@@ -202,117 +202,120 @@
 		</div>
 
 		<script>
-			 // 为文件输入元素添加事件监听器来处理文件选择事件
-			        document.getElementById('importExcelFile').addEventListener('change', importFromExcel);
-			
-			        function importFromExcel(event) {
-			            const file = event.target.files[0];
-			            if (!file) {
-			                alert("Please select a file.");
-			                return;
-			            }
-			
-			            const formData = new FormData();
-			            formData.append('file', file);
-			
-			            fetch('http://localhost:3000/api/contacts/import', {
-			                method: 'POST',
-			                body: formData
-			            })
-			            .then(response => {
-			                if (!response.ok) {
-			                    throw new Error('Network response was not ok');
-			                }
-			                return response.json();
-			            })
-			            .then(data => {
-			                alert("Contacts imported successfully!");
-			                location.reload();
-			            })
-			            .catch(error => {
-			                console.error('Error importing contacts:', error);
-			                alert("Import failed: " + error.message);
-			            });
-			        }
-			
-			document.addEventListener('DOMContentLoaded', function() {
-				fetch('http://localhost:3000/api/contacts')
-					.then(response => response.json())
-					.then(data => {
-						const tableBody = document.getElementById('contactsTable').querySelector('tbody');
-						tableBody.innerHTML = ''; // 清空现有数据
-						data.forEach(contact => {
-							const row = tableBody.insertRow();
-							row.insertCell(0).textContent = contact.name;
+			// 为文件输入元素添加事件监听器来处理文件选择事件
+			document.getElementById('importExcelFile').addEventListener('change', importFromExcel);
 
-							// 为电话号码、电子邮件和地址添加加号按钮
-							const phoneCell = row.insertCell(1);
-							phoneCell.textContent = contact.phone;
-							const addPhoneButton = document.createElement('button');
-							addPhoneButton.textContent = '+';
-							addPhoneButton.className = 'add-button';
-							addPhoneButton.onclick = function() {
-								openPhoneModal(contact.id);
-							};
-							phoneCell.appendChild(addPhoneButton);
+			function importFromExcel(event) {
+				const file = event.target.files[0];
+				if (!file) {
+					alert("Please select a file.");
+					return;
+				}
 
-							const emailCell = row.insertCell(2);
-							emailCell.textContent = contact.email;
-							const addEmailButton = document.createElement('button');
-							addEmailButton.textContent = '+';
-							addEmailButton.className = 'add-button';
-							addEmailButton.onclick = function() {
-								openEmailModal(contact.id);
-							};
-							emailCell.appendChild(addEmailButton);
+				const formData = new FormData();
+				formData.append('file', file);
 
-							const addressCell = row.insertCell(3);
-							addressCell.textContent = contact.address;
-							const addAddressButton = document.createElement('button');
-							addAddressButton.textContent = '+';
-							addAddressButton.className = 'add-button';
-							addAddressButton.onclick = function() {
-								openAddressModal(contact.id);
-							};
-							addressCell.appendChild(addAddressButton);
-
-							const actionCell = row.insertCell(4);
-							const actionButtons = document.createElement('div');
-							actionButtons.className = 'action-buttons';
-
-							const editButton = document.createElement('button');
-							editButton.textContent = 'Edit';
-							editButton.className = 'edit-button';
-							editButton.dataset.id = contact.id;
-							actionButtons.appendChild(editButton);
-
-							const deleteButton = document.createElement('button');
-							deleteButton.textContent = 'Delete';
-							deleteButton.className = 'delete-button';
-							deleteButton.dataset.id = contact.id;
-							actionButtons.appendChild(deleteButton);
-
-							const favoriteButton = document.createElement('button');
-							favoriteButton.textContent = 'Favorite';
-							favoriteButton.className =
-								`favorite-button ${contact.is_favorite ? 'favorite' : ''}`;
-							favoriteButton.dataset.id = contact.id;
-							actionButtons.appendChild(favoriteButton);
-
-							actionCell.appendChild(actionButtons);
-
-							actionButtons.addEventListener('click', function(event) {
-								if (event.target.classList.contains('edit-button')) {
-									handleEdit(event);
-								} else if (event.target.classList.contains('delete-button')) {
-									handleDelete(event);
-								} else if (event.target.classList.contains('favorite-button')) {
-									handleFavorite(event);
-								}
-							});
-						});
+				fetch('http://localhost:3000/api/contacts/import', {
+						method: 'POST',
+						body: formData
 					})
-					.catch(error => console.error('Error fetching contacts:', error));
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						return response.json();
+					})
+					.then(data => {
+						alert("Contacts imported successfully!");
+						location.reload();
+					})
+					.catch(error => {
+						console.error('Error importing contacts:', error);
+						alert("Import failed: " + error.message);
+					});
+			}
+
+			document.addEventListener('DOMContentLoaded', function() {
+			    fetch('http://localhost:3000/api/contacts')
+			        .then(response => response.json())
+			        .then(data => {
+			            const tableBody = document.getElementById('contactsTable').querySelector('tbody');
+			            tableBody.innerHTML = ''; // 清空现有数据
+			            data.forEach(contact => {
+			                // 第一行显示主要电话号码
+			                const row1 = tableBody.insertRow();
+			                row1.insertCell(0).textContent = contact.name;
+			
+			                const phoneCell1 = row1.insertCell(1);
+			                phoneCell1.textContent = contact.phone;
+			                const addPhoneButton1 = document.createElement('button');
+			                addPhoneButton1.textContent = '+';
+			                addPhoneButton1.className = 'add-button';
+			                addPhoneButton1.onclick = function() { openPhoneModal(contact.id); };
+			                phoneCell1.appendChild(addPhoneButton1);
+			
+			                // 第二行显示附加电话号码（如果有）
+			                if (contact.phones && contact.phones.length > 0) {
+			                    const row2 = tableBody.insertRow();
+			                    row2.insertCell(0).textContent = ''; // 空单元格，用于对齐名称
+			                    const phoneCell2 = row2.insertCell(1);
+			                    phoneCell2.textContent = contact.phones.join(', ');
+			                    phoneCell2.style.paddingLeft = '20px'; // 增加缩进，表示这是附加电话号码
+			                }
+			
+			                // 为电子邮件和地址添加单元格
+			                const emailCell = row1.insertCell(2);
+			                emailCell.textContent = contact.email;
+			                const addEmailButton = document.createElement('button');
+			                addEmailButton.textContent = '+';
+			                addEmailButton.className = 'add-button';
+			                addEmailButton.onclick = function() { openEmailModal(contact.id); };
+			                emailCell.appendChild(addEmailButton);
+			
+			                const addressCell = row1.insertCell(3);
+			                addressCell.textContent = contact.address;
+			                const addAddressButton = document.createElement('button');
+			                addAddressButton.textContent = '+';
+			                addAddressButton.className = 'add-button';
+			                addAddressButton.onclick = function() { openAddressModal(contact.id); };
+			                addressCell.appendChild(addAddressButton);
+			
+			                const actionCell = row1.insertCell(4);
+			                const actionButtons = document.createElement('div');
+			                actionButtons.className = 'action-buttons';
+			
+			                const editButton = document.createElement('button');
+			                editButton.textContent = 'Edit';
+			                editButton.className = 'edit-button';
+			                editButton.dataset.id = contact.id;
+			                actionButtons.appendChild(editButton);
+			
+			                const deleteButton = document.createElement('button');
+			                deleteButton.textContent = 'Delete';
+			                deleteButton.className = 'delete-button';
+			                deleteButton.dataset.id = contact.id;
+			                actionButtons.appendChild(deleteButton);
+			
+			                const favoriteButton = document.createElement('button');
+			                favoriteButton.textContent = 'Favorite';
+			                favoriteButton.className = `favorite-button ${contact.is_favorite ? 'favorite' : ''}`;
+			                favoriteButton.dataset.id = contact.id;
+			                actionButtons.appendChild(favoriteButton);
+			
+			                actionCell.appendChild(actionButtons);
+			
+			                actionButtons.addEventListener('click', function(event) {
+			                    if (event.target.classList.contains('edit-button')) {
+			                        handleEdit(event);
+			                    } else if (event.target.classList.contains('delete-button')) {
+			                        handleDelete(event);
+			                    } else if (event.target.classList.contains('favorite-button')) {
+			                        handleFavorite(event);
+			                    }
+			                });
+			            });
+			        })
+			        .catch(error => console.error('Error fetching contacts:', error));
 			});
 
 			function toggleFavoritesView() {
@@ -488,10 +491,31 @@
 			function addPhone() {
 				const newPhone = document.getElementById('newPhone').value;
 				if (newPhone) {
-					const phoneInput = document.getElementById('phone');
-					phoneInput.value += ', ' + newPhone;
-					alert("Phone added successfully");
-					closePhoneModal();
+					fetch(`http://localhost:3000/api/contact/${currentContactId}/addPhone`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								phone: newPhone
+							})
+						})
+						.then(response => {
+							if (!response.ok) {
+								throw new Error('Network response was not ok');
+							}
+							return response.json();
+						})
+						.then(data => {
+							alert("Phone added successfully");
+							location.reload(); // 重新加载页面以更新联系人信息
+						})
+						.catch(error => {
+							console.error('Error adding phone:', error);
+							alert("Failed to add phone: " + error.message);
+						});
+				} else {
+					alert("Please enter a phone number.");
 				}
 			}
 
