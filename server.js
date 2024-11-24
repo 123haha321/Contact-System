@@ -12,9 +12,9 @@ app.use(bodyParser.json());
 const pool = mysql.createPool({
 	connectionLimit: 10,
 	host: 'localhost',
-	user: 'root', // 替换为你的MySQL用户名
-	password: 'pfl170086', // 替换为你的MySQL密码
-	database: 'test', // 替换为你的数据库名称
+	user: 'root', 
+	password: 'pfl170086', 
+	database: 'test', 
 });
 
 
@@ -203,7 +203,7 @@ app.delete('/api/contact/:id/favorite', async (req, res) => {
 	});
 });
 
-// 新增：导出到Excel的路由
+// 导出到Excel的路由
 app.get('/api/contacts/export', (req, res) => {
 	const query = `
         SELECT contacts.name, contacts.phone, contacts.email, contacts.address, IFNULL(favor.contact_id, 0) as is_favorite
