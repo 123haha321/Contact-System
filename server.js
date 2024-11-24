@@ -74,21 +74,30 @@ app.post('/api/contact', async (req, res) => {
 	}
 });
 
-// 获取所有联系人信息，包括收藏状态
+// 获取所有联系人信息，包括电话号码
 app.get('/api/contacts', (req, res) => {
-	const query = `
+    const query = `
         SELECT contacts.*, IFNULL(favor.contact_id, 0) as is_favorite
         FROM contacts
         LEFT JOIN favor ON contacts.id = favor.contact_id`;
-	pool.query(query, (error, results) => {
-		if (error) {
-			return res.status(500).json({
-				message: error.message
-			});
-		}
-		res.status(200).json(results);
-	});
+    pool.query(query, (error, results) => {
+        if (error) {
+            return res.status(500).json({
+                message: error.message
+            });
+        }
+        // 确保phones列的数据被正确处理
+        results.forEach(contact => {
+            if (contact.phones) {
+                contact.phones = JSON.parse(contact.phones);
+            } else {
+                contact.phones = []; // 如果phones列没有数据，初始化为空数组
+            }
+        });
+        res.status(200).json(results);
+    });
 });
+
 
 // 新增：获取所有收藏的联系人信息
 app.get('/api/favorites', (req, res) => {
@@ -311,49 +320,50 @@ app.post('/api/contacts/import', upload.single('file'), (req, res) => {
 
 // 添加电话号码到联系人
 app.post('/api/contact/:id/addPhone', (req, res) => {
-	const {
-		phone
-	} = req.body;
-	const contactId = req.params.id;
+    const { phone } = req.body;
+    const contactId = req.params.id;
 
-	if (!phone) {
-		return res.status(400).json({
-			message: 'Phone number is required'
-		});
-	}
+    if (!phone) {
+        return res.status(400).json({
+            message: 'Phone number is required'
+        });
+    }
 
-	pool.query('SELECT phones FROM contacts WHERE id = ?', [contactId], (error, results) => {
-		if (error) {
-			return res.status(500).json({
-				message: error.message
-			});
-		}
-		if (results.length === 0) {
-			return res.status(404).json({
-				message: 'Contact not found'
-			});
-		}
+    pool.query('SELECT phones FROM contacts WHERE id = ?', [contactId], (error, results) => {
+        if (error) {
+            return res.status(500).json({
+                message: error.message
+            });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({
+                message: 'Contact not found'
+            });
+        }
 
-		let currentPhones = results[0].phones;
-		if (currentPhones === null) {
-			currentPhones = []; // 如果phones是null，初始化为一个空数组
-		}
+        let currentPhones = results[0].phones;
+        if (typeof currentPhones === 'string') {
+            currentPhones = JSON.parse(currentPhones); // 如果phones是字符串，解析为数组
+        } else if (!Array.isArray(currentPhones)) {
+            currentPhones = []; // 如果phones不是数组，初始化为空数组
+        }
 
-		const newPhones = [...new Set(currentPhones.concat(phone))]; // 确保电话号码不重复
+        const newPhones = [...new Set(currentPhones.concat(phone))]; // 确保电话号码不重复
 
-		const updateQuery = 'UPDATE contacts SET phones = ? WHERE id = ?';
-		pool.query(updateQuery, [JSON.stringify(newPhones), contactId], (error, updateResults) => {
-			if (error) {
-				return res.status(500).json({
-					message: error.message
-				});
-			}
-			res.status(200).json({
-				message: 'Phone number added successfully'
-			});
-		});
-	});
+        const updateQuery = 'UPDATE contacts SET phones = ? WHERE id = ?';
+        pool.query(updateQuery, [JSON.stringify(newPhones), contactId], (error, updateResults) => {
+            if (error) {
+                return res.status(500).json({
+                    message: error.message
+                });
+            }
+            res.status(200).json({
+                message: 'Phone number added successfully'
+            });
+        });
+    });
 });
+
 // 设置服务器监听的端口
 const PORT = 3000;
 app.listen(PORT, () => {
