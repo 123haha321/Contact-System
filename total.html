@@ -202,39 +202,39 @@
 		</div>
 
 		<script>
-			// 为文件输入元素添加事件监听器来处理文件选择事件
-			document.getElementById('importExcelFile').addEventListener('change', importFromExcel);
-
-			function importFromExcel(event) {
-				const file = event.target.files[0];
-				if (!file) {
-					alert("Please select a file.");
-					return;
-				}
-
-				const formData = new FormData();
-				formData.append('file', file);
-
-				fetch('http://localhost:3000/api/contacts/import', {
-						method: 'POST',
-						body: formData
-					})
-					.then(response => {
-						if (!response.ok) {
-							throw new Error('Network response was not ok');
-						}
-						return response.json();
-					})
-					.then(data => {
-						alert("Contacts imported successfully!");
-						location.reload();
-					})
-					.catch(error => {
-						console.error('Error importing contacts:', error);
-						alert("Import failed: " + error.message);
-					});
-			}
-
+			 // 为文件输入元素添加事件监听器来处理文件选择事件
+			        document.getElementById('importExcelFile').addEventListener('change', importFromExcel);
+			
+			        function importFromExcel(event) {
+			            const file = event.target.files[0];
+			            if (!file) {
+			                alert("Please select a file.");
+			                return;
+			            }
+			
+			            const formData = new FormData();
+			            formData.append('file', file);
+			
+			            fetch('http://localhost:3000/api/contacts/import', {
+			                method: 'POST',
+			                body: formData
+			            })
+			            .then(response => {
+			                if (!response.ok) {
+			                    throw new Error('Network response was not ok');
+			                }
+			                return response.json();
+			            })
+			            .then(data => {
+			                alert("Contacts imported successfully!");
+			                location.reload();
+			            })
+			            .catch(error => {
+			                console.error('Error importing contacts:', error);
+			                alert("Import failed: " + error.message);
+			            });
+			        }
+			
 			document.addEventListener('DOMContentLoaded', function() {
 				fetch('http://localhost:3000/api/contacts')
 					.then(response => response.json())
@@ -488,31 +488,10 @@
 			function addPhone() {
 				const newPhone = document.getElementById('newPhone').value;
 				if (newPhone) {
-					fetch(`http://localhost:3000/api/contact/${currentContactId}/addPhone`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								phone: newPhone
-							})
-						})
-						.then(response => {
-							if (!response.ok) {
-								throw new Error('Network response was not ok');
-							}
-							return response.json();
-						})
-						.then(data => {
-							alert("Phone added successfully");
-							location.reload(); // 重新加载页面以更新联系人信息
-						})
-						.catch(error => {
-							console.error('Error adding phone:', error);
-							alert("Failed to add phone: " + error.message);
-						});
-				} else {
-					alert("Please enter a phone number.");
+					const phoneInput = document.getElementById('phone');
+					phoneInput.value += ', ' + newPhone;
+					alert("Phone added successfully");
+					closePhoneModal();
 				}
 			}
 
