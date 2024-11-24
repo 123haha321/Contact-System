@@ -134,6 +134,8 @@
 			<button onclick="toggleForm()">Add Contact</button>
 			<button class="view-favorites-button" onclick="toggleFavoritesView()">View Favorites</button>
 			<button class="export-excel-button">Export to Excel</button>
+			<input type="file" id="importExcelFile" accept=".xlsx, .xls" style="display:none;" />
+			<button onclick="document.getElementById('importExcelFile').click();">Import from Excel</button>
 
 			<h2>Contact History</h2>
 			<table id="contactsTable">
@@ -200,6 +202,39 @@
 		</div>
 
 		<script>
+			// 为文件输入元素添加事件监听器来处理文件选择事件
+			document.getElementById('importExcelFile').addEventListener('change', importFromExcel);
+
+			function importFromExcel(event) {
+				const file = event.target.files[0];
+				if (!file) {
+					alert("Please select a file.");
+					return;
+				}
+
+				const formData = new FormData();
+				formData.append('file', file);
+
+				fetch('http://localhost:3000/api/contacts/import', {
+						method: 'POST',
+						body: formData
+					})
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						return response.json();
+					})
+					.then(data => {
+						alert("Contacts imported successfully!");
+						location.reload();
+					})
+					.catch(error => {
+						console.error('Error importing contacts:', error);
+						alert("Import failed: " + error.message);
+					});
+			}
+
 			document.addEventListener('DOMContentLoaded', function() {
 				fetch('http://localhost:3000/api/contacts')
 					.then(response => response.json())
@@ -453,10 +488,31 @@
 			function addPhone() {
 				const newPhone = document.getElementById('newPhone').value;
 				if (newPhone) {
-					const phoneInput = document.getElementById('phone');
-					phoneInput.value += ', ' + newPhone;
-					alert("Phone added successfully");
-					closePhoneModal();
+					fetch(`http://localhost:3000/api/contact/${currentContactId}/addPhone`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								phone: newPhone
+							})
+						})
+						.then(response => {
+							if (!response.ok) {
+								throw new Error('Network response was not ok');
+							}
+							return response.json();
+						})
+						.then(data => {
+							alert("Phone added successfully");
+							location.reload(); // 重新加载页面以更新联系人信息
+						})
+						.catch(error => {
+							console.error('Error adding phone:', error);
+							alert("Failed to add phone: " + error.message);
+						});
+				} else {
+					alert("Please enter a phone number.");
 				}
 			}
 
@@ -508,35 +564,67 @@
 				const modals = document.querySelectorAll('.modal');
 				modals.forEach(modal => modal.style.display = 'none');
 			});
-			
-			// 实现导出到Excel的逻辑
-			        function exportToExcel() {
-			            fetch('http://localhost:3000/api/contacts/export')
-			                .then(response => {
-			                    if (!response.ok) {
-			                        throw new Error('Network response was not ok');
-			                    }
-			                    return response.blob();
-			                })
-			                .then(blob => {
-			                    const url = window.URL.createObjectURL(blob);
-			                    const a = document.createElement('a');
-			                    a.style.display = 'none';
-			                    a.href = url;
-			                    a.download = 'contacts.xlsx';
-			                    document.body.appendChild(a);
-			                    a.click();
-			                    window.URL.revokeObjectURL(url);
-			                })
-			                .catch(error => {
-			                    console.error('Error exporting to Excel:', error);
-			                    alert("Export to Excel failed: " + error.message);
-			                });
-			        }
-			
-			        // 为导出到Excel按钮添加事件监听器
-			        document.querySelector('.export-excel-button').addEventListener('click', exportToExcel);
 
+			// 实现导出到Excel的逻辑
+			function exportToExcel() {
+				fetch('http://localhost:3000/api/contacts/export')
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						return response.blob();
+					})
+					.then(blob => {
+						const url = window.URL.createObjectURL(blob);
+						const a = document.createElement('a');
+						a.style.display = 'none';
+						a.href = url;
+						a.download = 'contacts.xlsx';
+						document.body.appendChild(a);
+						a.click();
+						window.URL.revokeObjectURL(url);
+					})
+					.catch(error => {
+						console.error('Error exporting to Excel:', error);
+						alert("Export to Excel failed: " + error.message);
+					});
+			}
+
+			// 为导出到Excel按钮添加事件监听器
+			document.querySelector('.export-excel-button').addEventListener('click', exportToExcel);
+
+			document.querySelector('input[type="file"]').addEventListener('change', importFromExcel);
+
+			// 实现导入Excel的逻辑
+			function importFromExcel(event) {
+				const file = event.target.files[0];
+				if (!file) {
+					alert("Please select a file.");
+					return;
+				}
+
+				const formData = new FormData();
+				formData.append('file', file);
+
+				fetch('http://localhost:3000/api/contacts/import', {
+						method: 'POST',
+						body: formData
+					})
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						return response.json();
+					})
+					.then(data => {
+						alert("Contacts imported successfully!");
+						location.reload();
+					})
+					.catch(error => {
+						console.error('Error importing contacts:', error);
+						alert("Import failed: " + error.message);
+					});
+			}
 		</script>
 	</body>
 </html>
