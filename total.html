@@ -48,7 +48,7 @@
 				background-color: #4CAF50;
 				color: white;
 				border: none;
-				padding: 5px 10px;
+				padding: 8px 10px;
 				cursor: pointer;
 				margin-left: 10px;
 			}
@@ -73,7 +73,7 @@
 				background-color: #007bff;
 				color: white;
 				border: none;
-				padding: 5px 10px;
+				padding: 8px 10px;
 				cursor: pointer;
 				margin-left: 5px;
 			}
@@ -133,7 +133,7 @@
 
 			<button onclick="toggleForm()">Add Contact</button>
 			<button class="view-favorites-button" onclick="toggleFavoritesView()">View Favorites</button>
-			<button class="export-excel-button" onclick="exportToExcel()">Export to Excel</button>
+			<button class="export-excel-button">Export to Excel</button>
 
 			<h2>Contact History</h2>
 			<table id="contactsTable">
@@ -509,13 +509,34 @@
 				modals.forEach(modal => modal.style.display = 'none');
 			});
 			
-			function exportToExcel() {
-			        // 实现导出到Excel的逻辑
-			        alert("Export to Excel feature not implemented yet.");
-			    }
+			// 实现导出到Excel的逻辑
+			        function exportToExcel() {
+			            fetch('http://localhost:3000/api/contacts/export')
+			                .then(response => {
+			                    if (!response.ok) {
+			                        throw new Error('Network response was not ok');
+			                    }
+			                    return response.blob();
+			                })
+			                .then(blob => {
+			                    const url = window.URL.createObjectURL(blob);
+			                    const a = document.createElement('a');
+			                    a.style.display = 'none';
+			                    a.href = url;
+			                    a.download = 'contacts.xlsx';
+			                    document.body.appendChild(a);
+			                    a.click();
+			                    window.URL.revokeObjectURL(url);
+			                })
+			                .catch(error => {
+			                    console.error('Error exporting to Excel:', error);
+			                    alert("Export to Excel failed: " + error.message);
+			                });
+			        }
 			
-			    // 为导出到Excel按钮添加事件监听器
-			    document.querySelector('.export-excel-button').addEventListener('click', exportToExcel);
+			        // 为导出到Excel按钮添加事件监听器
+			        document.querySelector('.export-excel-button').addEventListener('click', exportToExcel);
+
 		</script>
 	</body>
 </html>
